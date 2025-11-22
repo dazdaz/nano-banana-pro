@@ -102,7 +102,7 @@ Displays the currently configured Google Cloud project ID.
 #### Generate an image from text
 
 ```bash
-./02-nanopro.py "A cyberpunk banana wearing sunglasses, 4K"
+./02-nanopro.py --generate "A cyberpunk banana wearing sunglasses, 4K"
 ```
 
 #### Edit an existing image
@@ -152,7 +152,7 @@ Show up to 20 recent images (customize with `-n`):
 ./01-apikey.sh audit
 
 # 3. Generate an image
-./02-nanopro.py "A serene mountain landscape at sunset, photorealistic"
+./02-nanopro.py --generate "A serene mountain landscape at sunset, photorealistic"
 
 # 4. Edit the generated image
 ./02-nanopro.py --edit ~/nano_banana_pro_outputs/nano_20251122_201500.png "Add a cabin in the foreground"
@@ -165,15 +165,15 @@ Show up to 20 recent images (customize with `-n`):
 
 ```bash
 # Art styles
-./02-nanopro.py "A cat in the style of Van Gogh's Starry Night"
-./02-nanopro.py "Futuristic cityscape, cyberpunk aesthetic, neon lights"
+./02-nanopro.py --generate "A cat in the style of Van Gogh's Starry Night"
+./02-nanopro.py --generate "Futuristic cityscape, cyberpunk aesthetic, neon lights"
 
 # Photo editing
 ./02-nanopro.py --edit photo.jpg "Make it look like a Studio Ghibli scene"
 ./02-nanopro.py --edit portrait.png "Add dramatic lighting and remove background"
 
 # Creative concepts
-./02-nanopro.py "A steampunk robot playing chess, Victorian era, detailed mechanical parts"
+./02-nanopro.py --generate "A steampunk robot playing chess, Victorian era, detailed mechanical parts"
 ```
 
 ## Troubleshooting

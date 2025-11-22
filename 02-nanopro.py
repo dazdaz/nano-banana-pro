@@ -4,9 +4,8 @@ nano-banana-pro - Generate images with Nano Banana Pro
 Requires: API key saved via 01-apikey.sh
 
 Usage:
-    ./02-nanopro.py "A cyberpunk banana wearing sunglasses, 4K"
-    ./02-nanopro.py "Turn this photo into a Studio Ghibli scene" image.jpg
-    ./02-nanopro.py --edit "Add a crown" photo.png
+    ./02-nanopro.py --generate "A cyberpunk banana wearing sunglasses, 4K"
+    ./02-nanopro.py --edit photo.png "Add a crown"
     ./02-nanopro.py --list                 # Show recent generations
 """
 
@@ -217,22 +216,23 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s "A cyberpunk banana wearing sunglasses, 4K"
-  %(prog)s --edit "Add a crown" photo.png
+  %(prog)s --generate "A cyberpunk banana wearing sunglasses, 4K"
+  %(prog)s --edit photo.png "Add a crown"
   %(prog)s --list
         """
     )
     
     parser.add_argument(
-        'prompt',
-        nargs='*',
-        help='Text prompt for image generation'
+        '-g', '--generate',
+        metavar='PROMPT',
+        help='Generate an image from a text prompt'
     )
     
     parser.add_argument(
         '-e', '--edit',
-        metavar='IMAGE',
-        help='Edit an existing image (provide prompt and image path)'
+        nargs=2,
+        metavar=('IMAGE', 'PROMPT'),
+        help='Edit an existing image (provide image path and prompt)'
     )
     
     parser.add_argument(
@@ -257,24 +257,18 @@ Examples:
     if args.list:
         nano.list_recent(args.limit)
     
-    elif args.edit:
-        if len(args.prompt) < 1:
-            print("\033[0;31mError: Edit mode requires a prompt and image path\033[0m")
-            print(f"Usage: {sys.argv[0]} --edit IMAGE \"prompt\"")
-            sys.exit(1)
-        
-        # First argument is the prompt, edit flag has the image path
-        prompt = ' '.join(args.prompt)
-        nano.edit_image(prompt, args.edit)
-    
-    elif args.prompt:
+    elif args.generate:
         # Generate from prompt
-        prompt = ' '.join(args.prompt)
-        nano.generate(prompt)
+        nano.generate(args.generate)
+    
+    elif args.edit:
+        # Edit image: args.edit is a list [image_path, prompt]
+        image_path, prompt = args.edit
+        nano.edit_image(prompt, image_path)
     
     else:
         parser.print_help()
-        print("\n\033[1;33mTip:\033[0m Provide a prompt to generate an image")
+        print("\n\033[1;33mTip:\033[0m Use --generate to create an image or --edit to modify one")
         sys.exit(1)
 
 
