@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 """
-nano-banana-pro - Generate images with Nano Banana Pro
-Requires: API key saved via 01-apikey.sh
+nano-banana-pro - Generate images with Vertex AI Imagen
 
 Usage:
     ./02-nanopro.py --prompt "A cyberpunk banana wearing sunglasses, 4K"
+    ./02-nanopro.py --prompt "sunset" --aspect-ratio 16:9 --num-images 4
+    ./02-nanopro.py --prompt "cat" --negative-prompt "dog" --seed 12345
     ./02-nanopro.py --edit photo.png "Add a crown"
-    ./02-nanopro.py --list                 # Show recent generations
 """
 
 import argparse
-import base64
-import io
-import os
 import sys
+import time
 import warnings
 from datetime import datetime
 from pathlib import Path
 
 # Suppress Python version warnings from google.api_core
 warnings.filterwarnings('ignore', category=FutureWarning, module='google.api_core._python_version_support')
+# Suppress deprecation warnings from Vertex AI
+warnings.filterwarnings('ignore', category=UserWarning, module='vertexai._model_garden._model_garden_models')
 
 try:
     from vertexai.preview.vision_models import ImageGenerationModel
@@ -27,13 +27,6 @@ try:
 except ImportError:
     print("\033[0;31mError: google-cloud-aiplatform not installed\033[0m")
     print("Install with: pip install google-cloud-aiplatform")
-    sys.exit(1)
-
-try:
-    from PIL import Image
-except ImportError:
-    print("\033[0;31mError: Pillow not installed\033[0m")
-    print("Install with: pip install Pillow")
     sys.exit(1)
 
 
@@ -69,46 +62,87 @@ class NanoBananoPro:
         vertexai.init(project=project_id, location="us-central1")
         self.model = ImageGenerationModel.from_pretrained("imagegeneration@006")
     
-    def generate(self, prompt: str, output_filename: str = None) -> Path:
+    def generate(self, prompt: str, output_filename: str = None, aspect_ratio: str = "1:1",
+                 num_images: int = 1, negative_prompt: str = None, seed: int = None,
+                 guidance_scale: float = None) -> list:
         """
-        Generate an image from a text prompt.
+        Generate images from a text prompt.
         
         Args:
             prompt: Text description of the image to generate
             output_filename: Optional custom filename for the output
+            aspect_ratio: Image aspect ratio (1:1, 9:16, 16:9, 4:3, 3:4)
+            num_images: Number of images to generate (1-8)
+            negative_prompt: Text describing what to avoid in the image
+            seed: Random seed for reproducible generation
+            guidance_scale: Guidance scale for prompt adherence
             
         Returns:
-            Path to the saved image file
+            List of paths to the saved image files
         """
-        if output_filename:
-            output_path = self.output_dir / output_filename
-            # Ensure .jpg extension if no extension provided
-            if not output_path.suffix:
-                output_path = output_path.with_suffix('.jpg')
-        else:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_path = self.output_dir / f"nano_{timestamp}.jpg"
-        
-        print("\033[1;33mGenerating image with Nano Banana Pro...\033[0m")
-        print(f"Prompt: \033[0;32m{prompt}\033[0m\n")
+        print("\033[1;33mGenerating image(s) with Nano Banana Pro...\033[0m")
+        print(f"Prompt: \033[0;32m{prompt}\033[0m")
+        if negative_prompt:
+            print(f"Negative prompt: \033[0;31m{negative_prompt}\033[0m")
+        print(f"Aspect ratio: {aspect_ratio} | Images: {num_images}")
+        if seed is not None:
+            print(f"Seed: {seed}")
+        print()
         
         try:
+            # Start timing
+            start_time = time.time()
+            
+            # Prepare generation parameters
+            gen_params = {
+                'prompt': prompt,
+                'number_of_images': num_images,
+                'language': 'en',
+                'aspect_ratio': aspect_ratio,
+            }
+            
+            if negative_prompt:
+                gen_params['negative_prompt'] = negative_prompt
+            if seed is not None:
+                gen_params['seed'] = seed
+            if guidance_scale is not None:
+                gen_params['guidance_scale'] = guidance_scale
+            
             # Generate images using Vertex AI Imagen
-            images = self.model.generate_images(
-                prompt=prompt,
-                number_of_images=1,
-                language="en",
-                aspect_ratio="1:1",
-            )
+            images = self.model.generate_images(**gen_params)
             
-            # Save the generated image
-            images[0].save(location=str(output_path), include_generation_parameters=False)
+            # Save all generated images
+            saved_paths = []
+            for i, image in enumerate(images):
+                if output_filename and num_images == 1:
+                    output_path = self.output_dir / output_filename
+                    if not output_path.suffix:
+                        output_path = output_path.with_suffix('.jpg')
+                else:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    suffix = f"_{i+1}" if num_images > 1 else ""
+                    output_path = self.output_dir / f"nano_{timestamp}{suffix}.jpg"
+                
+                image.save(location=str(output_path), include_generation_parameters=False)
+                saved_paths.append(output_path)
             
-            print(f"\n\033[0;32mSaved → {output_path}\033[0m")
-            print(f"\033[0;36mEstimated cost: ${self.cost_per_image:.4f} USD\033[0m")
-            self._suggest_preview(output_path)
+            # End timing
+            end_time = time.time()
+            elapsed_time = end_time - start_time
             
-            return output_path
+            # Display results
+            print(f"\n\033[0;32m{'✓' if num_images == 1 else '✓ All images saved'}\033[0m")
+            for path in saved_paths:
+                print(f"  → {path}")
+            print(f"\033[0;35mGeneration time: {elapsed_time:.2f} seconds ({elapsed_time/num_images:.2f}s per image)\033[0m")
+            
+            total_cost = self.cost_per_image * num_images
+            print(f"\033[0;36mEstimated cost: ${total_cost:.4f} USD\033[0m")
+            
+            if num_images == 1:
+                self._suggest_preview(saved_paths[0])
+            
+            return saved_paths
             
         except Exception as e:
             print(f"\033[0;31mError generating image: {e}\033[0m")
@@ -116,7 +150,8 @@ class NanoBananoPro:
             traceback.print_exc()
             sys.exit(1)
     
-    def edit_image(self, prompt: str, image_path: str, output_filename: str = None) -> Path:
+    def edit_image(self, prompt: str, image_path: str, output_filename: str = None,
+                   negative_prompt: str = None, seed: int = None) -> Path:
         """
         Edit an existing image using a text prompt.
         
@@ -124,6 +159,8 @@ class NanoBananoPro:
             prompt: Text description of the edit to make
             image_path: Path to the image file to edit
             output_filename: Optional custom filename for the output
+            negative_prompt: Text describing what to avoid in the edit
+            seed: Random seed for reproducible generation
             
         Returns:
             Path to the saved edited image
@@ -145,44 +182,49 @@ class NanoBananoPro:
         
         print("\033[1;33mEditing image with Nano Banana Pro...\033[0m")
         print(f"Image: \033[0;36m{image_path}\033[0m")
-        print(f"Prompt: \033[0;32m{prompt}\033[0m\n")
+        print(f"Prompt: \033[0;32m{prompt}\033[0m")
+        if negative_prompt:
+            print(f"Negative prompt: \033[0;31m{negative_prompt}\033[0m")
+        if seed is not None:
+            print(f"Seed: {seed}")
+        print()
         
         try:
+            # Start timing
+            start_time = time.time()
+            
             # Read image file
             with open(image_file, 'rb') as f:
                 image_bytes = f.read()
             
-            # Determine MIME type based on file extension
-            mime_types = {
-                '.png': 'image/png',
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.webp': 'image/webp',
-                '.gif': 'image/gif'
+            # Create Vertex AI Image object
+            from vertexai.preview.vision_models import Image as VertexImage
+            vertex_image = VertexImage(image_bytes=image_bytes)
+            
+            # Prepare edit parameters
+            edit_params = {
+                'prompt': prompt,
+                'base_image': vertex_image,
+                'number_of_images': 1,
             }
             
-            mime_type = mime_types.get(image_file.suffix.lower(), 'image/png')
+            if negative_prompt:
+                edit_params['negative_prompt'] = negative_prompt
+            if seed is not None:
+                edit_params['seed'] = seed
             
-            # Create image part using the types module
-            from google.generativeai.types import Part
-            image_part = Part.from_bytes(data=image_bytes, mime_type=mime_type)
+            # Edit image using Vertex AI Imagen
+            edited_images = self.model.edit_image(**edit_params)
             
-            # Generate edited image
-            response = self.model.generate_content([image_part, prompt])
+            # Save the edited image
+            edited_images[0].save(location=str(output_path), include_generation_parameters=False)
             
-            # Check if generation was blocked
-            if not response.candidates:
-                print("\033[0;31mError: Generation blocked\033[0m")
-                print(f"Reason: {response.prompt_feedback}")
-                sys.exit(1)
+            # End timing
+            end_time = time.time()
+            elapsed_time = end_time - start_time
             
-            # Extract image data
-            img_data = response.candidates[0].content.parts[0].inline_data.data
-            
-            # Save edited image in the appropriate format
-            self._save_image(img_data, output_path)
-            
-            print(f"\n\033[0;32mEdited → {output_path}\033[0m")
+            print(f"\n\033[0;32m✓ Edited → {output_path}\033[0m")
+            print(f"\033[0;35mGeneration time: {elapsed_time:.2f} seconds\033[0m")
             print(f"\033[0;36mEstimated cost: ${self.cost_per_image:.4f} USD\033[0m")
             self._suggest_preview(output_path)
             
@@ -191,88 +233,6 @@ class NanoBananoPro:
         except Exception as e:
             print(f"\033[0;31mError editing image: {e}\033[0m")
             sys.exit(1)
-    
-    def list_recent(self, limit: int = 20):
-        """
-        List recent image generations.
-        
-        Args:
-            limit: Maximum number of files to display
-        """
-        print("\033[1;34mRecent Nano Banana Pro generations:\033[0m\n")
-        
-        # Get all image files sorted by modification time (both PNG and JPG)
-        image_files = []
-        for pattern in ["nano_*.png", "nano_*.jpg", "nano_*.jpeg"]:
-            image_files.extend(self.output_dir.glob(pattern))
-        
-        image_files = sorted(image_files, key=lambda p: p.stat().st_mtime, reverse=True)
-        
-        if not image_files:
-            print("No generations found.")
-            return
-        
-        # Display up to 'limit' files
-        for i, file_path in enumerate(image_files[:limit], 1):
-            stat = file_path.stat()
-            size_kb = stat.st_size / 1024
-            mtime = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-            
-            print(f"{i:2d}. {file_path.name:<40} {size_kb:>8.1f} KB  {mtime}")
-        
-        total = len(image_files)
-        if total > limit:
-            print(f"\n... and {total - limit} more files")
-        
-        # Calculate estimated total cost
-        total_cost = total * self.cost_per_image
-        
-        print(f"\nOutput directory: {self.output_dir}")
-        print(f"Total images: {total}")
-        print(f"\033[0;36mEstimated total cost: ${total_cost:.2f} USD (${self.cost_per_image:.4f} per image)\033[0m")
-    
-    def _save_image(self, img_data_base64: str, output_path: Path):
-        """
-        Save image data to file in the appropriate format.
-        
-        Args:
-            img_data_base64: Base64-encoded image data
-            output_path: Path where to save the image
-        """
-        # Decode the base64 image data
-        img_bytes = base64.b64decode(img_data_base64)
-        
-        # Determine output format based on extension
-        output_ext = output_path.suffix.lower()
-        
-        # For PNG, save directly (no conversion needed)
-        if output_ext == '.png':
-            with open(output_path, 'wb') as f:
-                f.write(img_bytes)
-        elif output_ext in ['.jpg', '.jpeg']:
-            # For JPEG, need to convert using PIL
-            try:
-                img = Image.open(io.BytesIO(img_bytes))
-                # Convert RGBA to RGB for JPEG
-                if img.mode in ('RGBA', 'LA', 'P'):
-                    # Create white background
-                    background = Image.new('RGB', img.size, (255, 255, 255))
-                    if img.mode == 'P':
-                        img = img.convert('RGBA')
-                    if img.mode in ('RGBA', 'LA'):
-                        background.paste(img, mask=img.split()[-1])  # Use alpha channel as mask
-                    img = background
-                img.save(output_path, 'JPEG', quality=95)
-            except Exception as e:
-                # If PIL fails, try saving raw bytes
-                print(f"\033[0;33mWarning: Could not convert to JPEG, saving as PNG instead\033[0m")
-                output_path = output_path.with_suffix('.png')
-                with open(output_path, 'wb') as f:
-                    f.write(img_bytes)
-        else:
-            # Default to PNG for unknown extensions - save raw bytes
-            with open(output_path, 'wb') as f:
-                f.write(img_bytes)
     
     def _suggest_preview(self, file_path: Path):
         """Suggest commands to preview the generated image."""
@@ -283,13 +243,24 @@ class NanoBananoPro:
 def main():
     """Main entry point for the CLI."""
     parser = argparse.ArgumentParser(
-        description="Generate images with Nano Banana Pro",
+        description="Generate images with Vertex AI Imagen",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --prompt "A cyberpunk banana wearing sunglasses, 4K"
-  %(prog)s --edit photo.png "Add a crown"
-  %(prog)s --list
+  Basic generation:
+    %(prog)s --prompt "A cyberpunk banana wearing sunglasses, 4K"
+  
+  With aspect ratio and multiple images:
+    %(prog)s --prompt "sunset over mountains" --aspect-ratio 16:9 --num-images 4
+  
+  With negative prompt and seed:
+    %(prog)s --prompt "cat playing" --negative-prompt "dog" --seed 12345
+  
+  Edit an image:
+    %(prog)s --edit photo.png "Add a crown"
+  
+  Save to specific directory:
+    %(prog)s --prompt "ocean waves" --output-dir ./images
         """
     )
     
@@ -307,22 +278,51 @@ Examples:
     )
     
     parser.add_argument(
-        '-l', '--list',
-        action='store_true',
-        help='List recent image generations'
-    )
-    
-    parser.add_argument(
-        '-n', '--limit',
-        type=int,
-        default=20,
-        help='Number of recent files to show with --list (default: 20)'
-    )
-    
-    parser.add_argument(
         '-o', '--output',
         metavar='FILENAME',
         help='Optional output filename (default: auto-generated with timestamp)'
+    )
+    
+    parser.add_argument(
+        '-ar', '--aspect-ratio',
+        choices=['1:1', '9:16', '16:9', '4:3', '3:4'],
+        default='1:1',
+        help='Aspect ratio for generated images (default: 1:1)'
+    )
+    
+    parser.add_argument(
+        '-n', '--num-images',
+        type=int,
+        default=1,
+        choices=range(1, 9),
+        metavar='N',
+        help='Number of images to generate (1-8, default: 1)'
+    )
+    
+    parser.add_argument(
+        '-np', '--negative-prompt',
+        metavar='TEXT',
+        help='Negative prompt - specify what to avoid in the image'
+    )
+    
+    parser.add_argument(
+        '-s', '--seed',
+        type=int,
+        metavar='SEED',
+        help='Random seed for reproducible generation'
+    )
+    
+    parser.add_argument(
+        '-g', '--guidance',
+        type=float,
+        metavar='SCALE',
+        help='Guidance scale for prompt adherence (higher = stricter, default: auto)'
+    )
+    
+    parser.add_argument(
+        '--output-dir',
+        metavar='DIR',
+        help='Output directory for generated images (default: current directory)'
     )
     
     args = parser.parse_args()
@@ -330,18 +330,35 @@ Examples:
     # Initialize the generator
     nano = NanoBananoPro()
     
-    # Handle different operations
-    if args.list:
-        nano.list_recent(args.limit)
+    # Set output directory if specified
+    if args.output_dir:
+        output_dir = Path(args.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        nano.output_dir = output_dir
     
-    elif args.prompt:
+    # Handle different operations
+    if args.prompt:
         # Generate from prompt
-        nano.generate(args.prompt, args.output)
+        nano.generate(
+            prompt=args.prompt,
+            output_filename=args.output,
+            aspect_ratio=args.aspect_ratio,
+            num_images=args.num_images,
+            negative_prompt=args.negative_prompt,
+            seed=args.seed,
+            guidance_scale=args.guidance
+        )
     
     elif args.edit:
         # Edit image: args.edit is a list [image_path, prompt]
         image_path, prompt = args.edit
-        nano.edit_image(prompt, image_path, args.output)
+        nano.edit_image(
+            prompt=prompt,
+            image_path=image_path,
+            output_filename=args.output,
+            negative_prompt=args.negative_prompt,
+            seed=args.seed
+        )
     
     else:
         parser.print_help()

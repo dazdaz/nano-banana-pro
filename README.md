@@ -1,18 +1,30 @@
 # Nano Banana Pro
 
-A command-line toolkit for managing Google Cloud API keys and generating images using Google's Generative AI.
+A command-line toolkit for **Google's Nano Banana Pro** - an advanced image generation and manipulation model powered by Vertex AI Imagen.
+
+This toolkit provides an easy-to-use interface for leveraging Google's state-of-the-art AI image generation capabilities through simple command-line tools.
+
+## What is Nano Banana Pro?
+
+Nano Banana Pro is Google's advanced image generation model available through Vertex AI. It offers:
+- **Text-to-Image Generation** - Create images from text descriptions
+- **Image Editing** - Modify existing images with AI-powered edits
+- **Multiple Aspect Ratios** - Generate images in various formats (1:1, 16:9, 9:16, 4:3, 3:4)
+- **Batch Generation** - Create multiple image variations at once
+- **Reproducible Results** - Use seeds for consistent outputs
+- **Negative Prompts** - Specify what to avoid in generations
 
 ## Features
 
-- **API Key Management** (`01-apikey.sh`) - Secure setup, audit, and removal of Google Cloud API keys
-- **Image Generation** (`02-nanopro.py`) - Generate and edit images using AI with simple text prompts
+- **Project Setup** (`01-apikey.sh`) - Configure Google Cloud project with Vertex AI access
+- **Image Generation** (`02-nanopro.py`) - Full-featured CLI for Google's Nano Banana Pro model with advanced controls
 
 ## Prerequisites
 
 - Google Cloud account with billing enabled
 - `gcloud` CLI installed and configured
-- Python 3.7+ (for image generation)
-- `google-generativeai` Python package
+- Python 3.10+ (for image generation)
+- `google-cloud-aiplatform` Python package
 
 ## Installation
 
@@ -26,7 +38,7 @@ A command-line toolkit for managing Google Cloud API keys and generating images 
 
 2. **Install Python dependencies**:
    ```bash
-   pip install google-generativeai
+   pip install google-cloud-aiplatform Pillow
    ```
 
 3. **Clone or download this repository**:
@@ -42,9 +54,9 @@ A command-line toolkit for managing Google Cloud API keys and generating images 
 
 ## Usage
 
-### 1. API Key Management (`01-apikey.sh`)
+### 1. Project Setup (`01-apikey.sh`)
 
-#### setup - Create and save a new API key
+#### setup - Configure Google Cloud project
 
 ```bash
 ./01-apikey.sh setup [PROJECT_ID]
@@ -53,9 +65,8 @@ A command-line toolkit for managing Google Cloud API keys and generating images 
 This will:
 - Let you select a Google Cloud project (or use the optional PROJECT_ID argument)
 - Check and enable billing if needed
-- Enable required APIs (AI Platform, API Keys)
-- Create a new API key
-- Save it to `~/.nano_banana_pro_key`
+- Enable required APIs (Vertex AI)
+- Save project configuration to `~/.nano_banana_pro_project`
 
 #### status - View current configuration
 
@@ -64,30 +75,8 @@ This will:
 ```
 
 Shows:
-- Local key file path and content
 - Project file path and ID
-
-#### audit - Verify key exists in cloud
-
-```bash
-./01-apikey.sh audit
-```
-
-Displays:
-- Local key information
-- All API keys in the cloud project
-- Marks your local key as (ACTIVE) if found
-
-#### remove - Delete keys
-
-```bash
-./01-apikey.sh remove
-```
-
-Interactive menu to:
-- Delete specific cloud keys
-- Remove only local files (keep cloud keys)
-- Cancel operation
+- Current configuration status
 
 #### project - Show current project ID
 
@@ -99,63 +88,100 @@ Displays the currently configured Google Cloud project ID.
 
 ### 2. Image Generation (`02-nanopro.py`)
 
-#### Generate an image from text
+#### Basic Commands
 
+**Generate an image from text:**
 ```bash
 ./02-nanopro.py --prompt "A cyberpunk banana wearing sunglasses, 4K"
 ```
 
-#### Edit an existing image
-
+**Edit an existing image:**
 ```bash
 ./02-nanopro.py --edit photo.png "Add a crown to the subject"
 ```
 
-#### List recent generations
-
-```bash
-./02-nanopro.py --list
-```
-
-Show up to 20 recent images (customize with `-n`):
-```bash
-./02-nanopro.py --list -n 50
-```
-
-#### Get help
-
+**Get help:**
 ```bash
 ./02-nanopro.py --help
 ```
 
+#### Advanced Options
+
+**`-s, --seed` - Random Seed (Reproducibility)**
+
+The seed option allows you to generate the **exact same image** multiple times. This is crucial for:
+- **A/B Testing**: Compare different prompts with the same random seed to see only the effect of your prompt changes
+- **Consistency**: Generate variations of the same base image by keeping the seed constant
+- **Debugging**: Reproduce exact results when testing or troubleshooting
+- **Version Control**: Document and recreate specific images later
+
+Example use cases:
+```bash
+# Generate an image with a specific seed
+./02-nanopro.py --prompt "mountain landscape" --seed 12345
+
+# Generate again with the same seed = identical image
+./02-nanopro.py --prompt "mountain landscape" --seed 12345
+
+# Change only the prompt to see the effect
+./02-nanopro.py --prompt "mountain landscape at sunset" --seed 12345
+
+# Same seed, different aspect ratio = consistent style
+./02-nanopro.py --prompt "mountain landscape" --seed 12345 --aspect-ratio 16:9
+```
+
+**`-g, --guidance` - Guidance Scale (Prompt Adherence)**
+
+Controls how strictly the AI follows your prompt. Higher values = more literal interpretation.
+
+- **Low values (1-50)**: More creative freedom, artistic interpretation
+- **Medium values (50-100)**: Balanced between creativity and accuracy
+- **High values (100-200)**: Very strict adherence to prompt, less creative variation
+
+Examples:
+```bash
+# Low guidance - creative, artistic interpretation
+./02-nanopro.py --prompt "futuristic city" --guidance 30
+
+# Medium guidance - balanced (similar to default)
+./02-nanopro.py --prompt "futuristic city" --guidance 75
+
+# High guidance - very literal interpretation
+./02-nanopro.py --prompt "futuristic city" --guidance 150
+
+# Combine with seed to compare guidance levels
+./02-nanopro.py --prompt "sunset" --seed 999 --guidance 50
+./02-nanopro.py --prompt "sunset" --seed 999 --guidance 150
+```
+
 ## File Locations
 
-- **API Key**: `~/.nano_banana_pro_key`
 - **Project ID**: `~/.nano_banana_pro_project`
-- **Generated Images**: `~/nano_banana_pro_outputs/`
+- **Generated Images**: Current working directory (where you run the script)
 
 ## Security
 
-- API keys are stored in your home directory with `600` permissions (read/write for owner only)
+- Project configuration is stored in your home directory with `600` permissions (read/write for owner only)
+- Uses Google Cloud's Application Default Credentials (ADC) for authentication
 - The `.gitignore` file prevents accidental commits of sensitive files
-- Never share your API key or commit it to version control
+- Vertex AI uses your Google Cloud project's IAM permissions for access control
 
 ## Examples
 
 ### Complete workflow
 
 ```bash
-# 1. Set up API key
+# 1. Set up project
 ./01-apikey.sh setup
 
 # 2. Verify setup
-./01-apikey.sh audit
+./01-apikey.sh status
 
 # 3. Generate an image
 ./02-nanopro.py --prompt "A serene mountain landscape at sunset, photorealistic"
 
 # 4. Edit the generated image
-./02-nanopro.py --edit ~/nano_banana_pro_outputs/nano_20251122_201500.png "Add a cabin in the foreground"
+./02-nanopro.py --edit nano_20251122_201500.jpg "Add a cabin in the foreground"
 
 # 5. List all generations
 ./02-nanopro.py --list
@@ -178,16 +204,16 @@ Show up to 20 recent images (customize with `-n`):
 
 ## Troubleshooting
 
-### "No API key found"
-Run `./01-apikey.sh setup` to create and save a new API key.
+### "No project configuration found"
+Run `./01-apikey.sh setup` to configure your Google Cloud project.
 
 ### "Billing not enabled"
 The setup script will attempt to link your project to a billing account automatically. If this fails, visit the [Google Cloud Console](https://console.cloud.google.com/billing) to enable billing manually.
 
-### "google-generativeai not installed"
+### "google-cloud-aiplatform not installed"
 Install the required Python package:
 ```bash
-pip install google-generativeai
+pip install google-cloud-aiplatform Pillow
 ```
 
 ### "Generation blocked"
@@ -201,25 +227,28 @@ chmod +x 01-apikey.sh 02-nanopro.py
 
 ## Architecture
 
-### Key Manager (`01-apikey.sh`)
+### Project Setup (`01-apikey.sh`)
 - Written in Bash for easy integration with `gcloud` CLI
 - Handles project selection, billing checks, and API enablement
-- Provides interactive menus for key management
-- Stores keys securely in home directory
+- Configures Vertex AI access for the project
+- Stores project configuration securely in home directory
 
 ### Image Generator (`02-nanopro.py`)
 - Written in Python for robust error handling and type safety
-- Uses Google's `generativeai` library
-- Reads API key from file created by key manager
+- Uses Google's Vertex AI SDK (`google-cloud-aiplatform`)
+- Leverages Vertex AI Imagen for enterprise-grade image generation
 - Object-oriented design for maintainability
-- Supports both text-to-image and image-to-image generation
+- Supports both text-to-image and image editing operations
+- Displays generation time for performance tracking
 
 ## API Usage and Costs
 
-- Images are generated using Google's Gemini AI models
+- Images are generated using Google's **Vertex AI Imagen** models
+- This is an enterprise AI platform with usage-based billing
 - Charges apply based on your Google Cloud billing account
 - Monitor usage in the [Google Cloud Console](https://console.cloud.google.com)
-- See [Google AI pricing](https://ai.google.dev/pricing) for current rates
+- See [Vertex AI pricing](https://cloud.google.com/vertex-ai/pricing) for current rates
+- Estimated cost: ~$0.04 USD per image generation (subject to change)
 
 ## Contributing
 
