@@ -42,7 +42,7 @@ class NanoBananoPro:
     def __init__(self):
         self.key_file = Path.home() / ".nano_banana_pro_key"
         self.output_dir = Path.cwd()  # Use current working directory
-        self.model_name = "gemini-3-pro-image-preview"
+        self.model_name = "imagen-3.0-generate-001"  # Correct Imagen model for generation
         
         # Pricing estimates (USD) - subject to change, check Google AI pricing
         self.cost_per_image = 0.04  # Estimated cost per image generation
@@ -80,12 +80,12 @@ class NanoBananoPro:
         """
         if output_filename:
             output_path = self.output_dir / output_filename
-            # Ensure .png extension
+            # Ensure .jpg extension if no extension provided
             if not output_path.suffix:
-                output_path = output_path.with_suffix('.png')
+                output_path = output_path.with_suffix('.jpg')
         else:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_path = self.output_dir / f"nano_{timestamp}.png"
+            output_path = self.output_dir / f"nano_{timestamp}.jpg"
         
         print("\033[1;33mGenerating image with Nano Banana Pro...\033[0m")
         print(f"Prompt: \033[0;32m{prompt}\033[0m\n")
@@ -200,12 +200,12 @@ class NanoBananoPro:
         """
         print("\033[1;34mRecent Nano Banana Pro generations:\033[0m\n")
         
-        # Get all image files sorted by modification time
-        image_files = sorted(
-            self.output_dir.glob("nano_*.png"),
-            key=lambda p: p.stat().st_mtime,
-            reverse=True
-        )
+        # Get all image files sorted by modification time (both PNG and JPG)
+        image_files = []
+        for pattern in ["nano_*.png", "nano_*.jpg", "nano_*.jpeg"]:
+            image_files.extend(self.output_dir.glob(pattern))
+        
+        image_files = sorted(image_files, key=lambda p: p.stat().st_mtime, reverse=True)
         
         if not image_files:
             print("No generations found.")
