@@ -36,6 +36,9 @@ class NanoBananoPro:
         self.output_dir = Path.home() / "nano_banana_pro_outputs"
         self.model_name = "gemini-3-pro-image-preview"
         
+        # Pricing estimates (USD) - subject to change, check Google AI pricing
+        self.cost_per_image = 0.04  # Estimated cost per image generation
+        
         # Create output directory if it doesn't exist
         self.output_dir.mkdir(exist_ok=True)
         
@@ -92,6 +95,7 @@ class NanoBananoPro:
                 f.write(base64.b64decode(img_data))
             
             print(f"\n\033[0;32mSaved → {output_path}\033[0m")
+            print(f"\033[0;36mEstimated cost: ${self.cost_per_image:.4f} USD\033[0m")
             self._suggest_preview(output_path)
             
             return output_path
@@ -161,6 +165,7 @@ class NanoBananoPro:
                 f.write(base64.b64decode(img_data))
             
             print(f"\n\033[0;32mEdited → {output_path}\033[0m")
+            print(f"\033[0;36mEstimated cost: ${self.cost_per_image:.4f} USD\033[0m")
             self._suggest_preview(output_path)
             
             return output_path
@@ -201,7 +206,12 @@ class NanoBananoPro:
         if total > limit:
             print(f"\n... and {total - limit} more files")
         
+        # Calculate estimated total cost
+        total_cost = total * self.cost_per_image
+        
         print(f"\nOutput directory: {self.output_dir}")
+        print(f"Total images: {total}")
+        print(f"\033[0;36mEstimated total cost: ${total_cost:.2f} USD (${self.cost_per_image:.4f} per image)\033[0m")
     
     def _suggest_preview(self, file_path: Path):
         """Suggest commands to preview the generated image."""
