@@ -252,6 +252,7 @@ chmod +x 01-apikey.sh 02-nanopro.py
 ## Blogs
 
 * https://cloud.google.com/blog/products/ai-machine-learning/nano-banana-pro-available-for-enterprise
+* https://x.com/GoogleAIStudio/status/1992267030050083091
 
 ## Contributing
 
