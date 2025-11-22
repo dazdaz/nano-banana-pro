@@ -184,9 +184,6 @@ Examples:
 
 # 4. Edit the generated image
 ./02-nanopro.py --edit nano_20251122_201500.jpg "Add a cabin in the foreground"
-
-# 5. List all generations
-./02-nanopro.py --list
 ```
 
 ### Generate various images
