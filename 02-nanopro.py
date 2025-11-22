@@ -87,7 +87,7 @@ class NanoBananoPro:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_path = self.output_dir / f"nano_{timestamp}.png"
         
-        print("\033[1;33mGenerating with Nano Banana Pro...\033[0m")
+        print("\033[1;33mGenerating image with Nano Banana Pro...\033[0m")
         print(f"Prompt: \033[0;32m{prompt}\033[0m\n")
         
         try:
@@ -241,28 +241,37 @@ class NanoBananoPro:
         # Decode the base64 image data
         img_bytes = base64.b64decode(img_data_base64)
         
-        # Load image with PIL
-        img = Image.open(io.BytesIO(img_bytes))
-        
         # Determine output format based on extension
         output_ext = output_path.suffix.lower()
         
-        if output_ext in ['.jpg', '.jpeg']:
-            # Convert RGBA to RGB for JPEG
-            if img.mode in ('RGBA', 'LA', 'P'):
-                # Create white background
-                background = Image.new('RGB', img.size, (255, 255, 255))
-                if img.mode == 'P':
-                    img = img.convert('RGBA')
-                if img.mode in ('RGBA', 'LA'):
-                    background.paste(img, mask=img.split()[-1])  # Use alpha channel as mask
-                img = background
-            img.save(output_path, 'JPEG', quality=95)
-        elif output_ext == '.png':
-            img.save(output_path, 'PNG')
+        # For PNG, save directly (no conversion needed)
+        if output_ext == '.png':
+            with open(output_path, 'wb') as f:
+                f.write(img_bytes)
+        elif output_ext in ['.jpg', '.jpeg']:
+            # For JPEG, need to convert using PIL
+            try:
+                img = Image.open(io.BytesIO(img_bytes))
+                # Convert RGBA to RGB for JPEG
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    # Create white background
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    if img.mode in ('RGBA', 'LA'):
+                        background.paste(img, mask=img.split()[-1])  # Use alpha channel as mask
+                    img = background
+                img.save(output_path, 'JPEG', quality=95)
+            except Exception as e:
+                # If PIL fails, try saving raw bytes
+                print(f"\033[0;33mWarning: Could not convert to JPEG, saving as PNG instead\033[0m")
+                output_path = output_path.with_suffix('.png')
+                with open(output_path, 'wb') as f:
+                    f.write(img_bytes)
         else:
-            # Default to PNG for unknown extensions
-            img.save(output_path, 'PNG')
+            # Default to PNG for unknown extensions - save raw bytes
+            with open(output_path, 'wb') as f:
+                f.write(img_bytes)
     
     def _suggest_preview(self, file_path: Path):
         """Suggest commands to preview the generated image."""
