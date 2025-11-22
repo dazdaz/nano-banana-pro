@@ -14,8 +14,12 @@ import argparse
 import base64
 import os
 import sys
+import warnings
 from datetime import datetime
 from pathlib import Path
+
+# Suppress Python version warnings from google.api_core
+warnings.filterwarnings('ignore', category=FutureWarning, module='google.api_core._python_version_support')
 
 try:
     import google.generativeai as genai
