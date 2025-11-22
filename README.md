@@ -14,6 +14,8 @@ Nano Banana Pro is Google's advanced image generation model available through Ve
 - **Reproducible Results** - Use seeds for consistent outputs
 - **Negative Prompts** - Specify what to avoid in generations
 
+<img width="2016" height="1134" alt="nano_20251122_210014_3" src="https://github.com/user-attachments/assets/500a34f0-84e4-4d4a-9bca-b3cc7bf95a70" />
+
 ## Features
 
 - **Project Setup** (`01-apikey.sh`) - Configure Google Cloud project with Vertex AI access
