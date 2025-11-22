@@ -173,10 +173,10 @@ Examples:
 ### Complete workflow
 
 ```bash
-# 1. Set up project
+# 1. Create a Google Cloud API Key
 ./01-apikey.sh setup
 
-# 2. Verify setup
+# 2. Verify Key setup
 ./01-apikey.sh status
 
 # 3. Generate an image
