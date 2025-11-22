@@ -252,6 +252,10 @@ chmod +x 01-apikey.sh 02-nanopro.py
 - See [Vertex AI pricing](https://cloud.google.com/vertex-ai/pricing) for current rates
 - Estimated cost: ~$0.04 USD per image generation (subject to change)
 
+## Blogs
+
+* https://cloud.google.com/blog/products/ai-machine-learning/nano-banana-pro-available-for-enterprise
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
