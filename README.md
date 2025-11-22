@@ -44,20 +44,20 @@ A command-line toolkit for managing Google Cloud API keys and generating images 
 
 ### 1. API Key Management (`01-apikey.sh`)
 
-#### Setup - Create and save a new API key
+#### setup - Create and save a new API key
 
 ```bash
-./01-apikey.sh setup
+./01-apikey.sh setup [PROJECT_ID]
 ```
 
 This will:
-- Let you select a Google Cloud project
+- Let you select a Google Cloud project (or use the optional PROJECT_ID argument)
 - Check and enable billing if needed
 - Enable required APIs (AI Platform, API Keys)
 - Create a new API key
 - Save it to `~/.nano_banana_pro_key`
 
-#### Status - View current configuration
+#### status - View current configuration
 
 ```bash
 ./01-apikey.sh status
@@ -67,7 +67,7 @@ Shows:
 - Local key file path and content
 - Project file path and ID
 
-#### Audit - Verify key exists in cloud
+#### audit - Verify key exists in cloud
 
 ```bash
 ./01-apikey.sh audit
@@ -78,7 +78,7 @@ Displays:
 - All API keys in the cloud project
 - Marks your local key as (ACTIVE) if found
 
-#### Remove - Delete keys
+#### remove - Delete keys
 
 ```bash
 ./01-apikey.sh remove
@@ -89,19 +89,13 @@ Interactive menu to:
 - Remove only local files (keep cloud keys)
 - Cancel operation
 
-#### Add - Manually add a key
-
-```bash
-./01-apikey.sh add "AIzaSy..."
-```
-
-Saves a manually-provided API key.
-
-#### Project - Show current project ID
+#### project - Show current project ID
 
 ```bash
 ./01-apikey.sh project
 ```
+
+Displays the currently configured Google Cloud project ID.
 
 ### 2. Image Generation (`02-nanopro.py`)
 
