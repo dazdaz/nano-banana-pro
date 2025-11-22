@@ -25,7 +25,7 @@ except ImportError:
     sys.exit(1)
 
 
-class NanoBananaPro:
+class NanoBananoPro:
     """Nano Banana Pro image generator using Google's Generative AI."""
     
     def __init__(self):
