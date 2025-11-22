@@ -11,6 +11,7 @@ Usage:
 
 import argparse
 import base64
+import io
 import os
 import sys
 import warnings
@@ -25,6 +26,13 @@ try:
 except ImportError:
     print("\033[0;31mError: google-generativeai not installed\033[0m")
     print("Install with: pip install google-generativeai")
+    sys.exit(1)
+
+try:
+    from PIL import Image
+except ImportError:
+    print("\033[0;31mError: Pillow not installed\033[0m")
+    print("Install with: pip install Pillow")
     sys.exit(1)
 
 
@@ -91,12 +99,11 @@ class NanoBananoPro:
                 print(f"Reason: {response.prompt_feedback}")
                 sys.exit(1)
             
-            # Extract and decode image data
+            # Extract image data
             img_data = response.candidates[0].content.parts[0].inline_data.data
             
-            # Save image
-            with open(output_path, 'wb') as f:
-                f.write(base64.b64decode(img_data))
+            # Save image in the appropriate format
+            self._save_image(img_data, output_path)
             
             print(f"\n\033[0;32mSaved → {output_path}\033[0m")
             print(f"\033[0;36mEstimated cost: ${self.cost_per_image:.4f} USD\033[0m")
@@ -168,12 +175,11 @@ class NanoBananoPro:
                 print(f"Reason: {response.prompt_feedback}")
                 sys.exit(1)
             
-            # Extract and decode image data
+            # Extract image data
             img_data = response.candidates[0].content.parts[0].inline_data.data
             
-            # Save edited image
-            with open(output_path, 'wb') as f:
-                f.write(base64.b64decode(img_data))
+            # Save edited image in the appropriate format
+            self._save_image(img_data, output_path)
             
             print(f"\n\033[0;32mEdited → {output_path}\033[0m")
             print(f"\033[0;36mEstimated cost: ${self.cost_per_image:.4f} USD\033[0m")
@@ -223,6 +229,40 @@ class NanoBananoPro:
         print(f"\nOutput directory: {self.output_dir}")
         print(f"Total images: {total}")
         print(f"\033[0;36mEstimated total cost: ${total_cost:.2f} USD (${self.cost_per_image:.4f} per image)\033[0m")
+    
+    def _save_image(self, img_data_base64: str, output_path: Path):
+        """
+        Save image data to file in the appropriate format.
+        
+        Args:
+            img_data_base64: Base64-encoded image data
+            output_path: Path where to save the image
+        """
+        # Decode the base64 image data
+        img_bytes = base64.b64decode(img_data_base64)
+        
+        # Load image with PIL
+        img = Image.open(io.BytesIO(img_bytes))
+        
+        # Determine output format based on extension
+        output_ext = output_path.suffix.lower()
+        
+        if output_ext in ['.jpg', '.jpeg']:
+            # Convert RGBA to RGB for JPEG
+            if img.mode in ('RGBA', 'LA', 'P'):
+                # Create white background
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                if img.mode in ('RGBA', 'LA'):
+                    background.paste(img, mask=img.split()[-1])  # Use alpha channel as mask
+                img = background
+            img.save(output_path, 'JPEG', quality=95)
+        elif output_ext == '.png':
+            img.save(output_path, 'PNG')
+        else:
+            # Default to PNG for unknown extensions
+            img.save(output_path, 'PNG')
     
     def _suggest_preview(self, file_path: Path):
         """Suggest commands to preview the generated image."""

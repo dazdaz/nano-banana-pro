@@ -4,3 +4,7 @@
 # Google Generative AI SDK
 # Used for image generation and API authentication
 google-generativeai>=0.3.0
+
+# Python Imaging Library (Pillow)
+# Used for image format conversion (PNG/JPEG)
+Pillow>=10.0.0
