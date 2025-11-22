@@ -35,3 +35,8 @@ build/
 tmp/
 temp/
 *.tmp
+
+# Generated images
+*.png
+*.jpg
+*.jpeg
