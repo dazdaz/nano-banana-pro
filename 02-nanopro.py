@@ -22,10 +22,11 @@ from pathlib import Path
 warnings.filterwarnings('ignore', category=FutureWarning, module='google.api_core._python_version_support')
 
 try:
-    import google.generativeai as genai
+    from vertexai.preview.vision_models import ImageGenerationModel
+    import vertexai
 except ImportError:
-    print("\033[0;31mError: google-generativeai not installed\033[0m")
-    print("Install with: pip install google-generativeai")
+    print("\033[0;31mError: google-cloud-aiplatform not installed\033[0m")
+    print("Install with: pip install google-cloud-aiplatform")
     sys.exit(1)
 
 try:
@@ -37,35 +38,36 @@ except ImportError:
 
 
 class NanoBananoPro:
-    """Nano Banana Pro image generator using Google's Generative AI."""
+    """Nano Banana Pro image generator using Google's Vertex AI Imagen."""
     
     def __init__(self):
         self.key_file = Path.home() / ".nano_banana_pro_key"
+        self.project_file = Path.home() / ".nano_banana_pro_project"
         self.output_dir = Path.cwd()  # Use current working directory
-        self.model_name = "imagen-3.0-generate-001"  # Correct Imagen model for generation
         
         # Pricing estimates (USD) - subject to change, check Google AI pricing
         self.cost_per_image = 0.04  # Estimated cost per image generation
         
-        # Load and configure API key
-        self._load_api_key()
+        # Load project and initialize Vertex AI
+        self._load_config()
     
-    def _load_api_key(self):
-        """Load API key from file and configure the API."""
-        if not self.key_file.exists():
-            print("\033[0;31mNo API key found!\033[0m")
-            print("Run: ./01-apikey.sh setup   (or)   ./01-apikey.sh add \"your-key\"")
+    def _load_config(self):
+        """Load project configuration and initialize Vertex AI."""
+        if not self.project_file.exists():
+            print("\033[0;31mNo project configuration found!\033[0m")
+            print("Run: ./01-apikey.sh setup")
             sys.exit(1)
         
-        with open(self.key_file, 'r') as f:
-            api_key = f.read().strip()
+        with open(self.project_file, 'r') as f:
+            project_id = f.read().strip()
         
-        if not api_key:
-            print("\033[0;31mAPI key file is empty!\033[0m")
+        if not project_id:
+            print("\033[0;31mProject file is empty!\033[0m")
             sys.exit(1)
         
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(self.model_name)
+        # Initialize Vertex AI
+        vertexai.init(project=project_id, location="us-central1")
+        self.model = ImageGenerationModel.from_pretrained("imagegeneration@006")
     
     def generate(self, prompt: str, output_filename: str = None) -> Path:
         """
@@ -91,19 +93,16 @@ class NanoBananoPro:
         print(f"Prompt: \033[0;32m{prompt}\033[0m\n")
         
         try:
-            response = self.model.generate_content(prompt)
+            # Generate images using Vertex AI Imagen
+            images = self.model.generate_images(
+                prompt=prompt,
+                number_of_images=1,
+                language="en",
+                aspect_ratio="1:1",
+            )
             
-            # Check if generation was blocked
-            if not response.candidates:
-                print("\033[0;31mError: Generation blocked\033[0m")
-                print(f"Reason: {response.prompt_feedback}")
-                sys.exit(1)
-            
-            # Extract image data
-            img_data = response.candidates[0].content.parts[0].inline_data.data
-            
-            # Save image in the appropriate format
-            self._save_image(img_data, output_path)
+            # Save the generated image
+            images[0].save(location=str(output_path), include_generation_parameters=False)
             
             print(f"\n\033[0;32mSaved → {output_path}\033[0m")
             print(f"\033[0;36mEstimated cost: ${self.cost_per_image:.4f} USD\033[0m")
@@ -113,6 +112,8 @@ class NanoBananoPro:
             
         except Exception as e:
             print(f"\033[0;31mError generating image: {e}\033[0m")
+            import traceback
+            traceback.print_exc()
             sys.exit(1)
     
     def edit_image(self, prompt: str, image_path: str, output_filename: str = None) -> Path:
