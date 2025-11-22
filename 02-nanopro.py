@@ -4,7 +4,7 @@ nano-banana-pro - Generate images with Nano Banana Pro
 Requires: API key saved via 01-apikey.sh
 
 Usage:
-    ./02-nanopro.py --generate "A cyberpunk banana wearing sunglasses, 4K"
+    ./02-nanopro.py --prompt "A cyberpunk banana wearing sunglasses, 4K"
     ./02-nanopro.py --edit photo.png "Add a crown"
     ./02-nanopro.py --list                 # Show recent generations
 """
@@ -277,15 +277,15 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --generate "A cyberpunk banana wearing sunglasses, 4K"
+  %(prog)s --prompt "A cyberpunk banana wearing sunglasses, 4K"
   %(prog)s --edit photo.png "Add a crown"
   %(prog)s --list
         """
     )
     
     parser.add_argument(
-        '-g', '--generate',
-        metavar='PROMPT',
+        '-p', '--prompt',
+        metavar='TEXT',
         help='Generate an image from a text prompt'
     )
     
@@ -324,9 +324,9 @@ Examples:
     if args.list:
         nano.list_recent(args.limit)
     
-    elif args.generate:
+    elif args.prompt:
         # Generate from prompt
-        nano.generate(args.generate, args.output)
+        nano.generate(args.prompt, args.output)
     
     elif args.edit:
         # Edit image: args.edit is a list [image_path, prompt]
@@ -335,7 +335,7 @@ Examples:
     
     else:
         parser.print_help()
-        print("\n\033[1;33mTip:\033[0m Use --generate to create an image or --edit to modify one")
+        print("\n\033[1;33mTip:\033[0m Use --prompt to create an image or --edit to modify one")
         sys.exit(1)
 
 

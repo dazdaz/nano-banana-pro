@@ -1,0 +1,1 @@
+- Use secret manager for storing of API Keys
