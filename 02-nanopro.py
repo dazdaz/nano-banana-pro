@@ -19,7 +19,6 @@ from pathlib import Path
 
 try:
     import google.generativeai as genai
-    from google.generativeai.types import Part
 except ImportError:
     print("\033[0;31mError: google-generativeai not installed\033[0m")
     print("Install with: pip install google-generativeai")
@@ -138,7 +137,8 @@ class NanoBananaPro:
             
             mime_type = mime_types.get(image_file.suffix.lower(), 'image/png')
             
-            # Create image part
+            # Create image part using the types module
+            from google.generativeai.types import Part
             image_part = Part.from_bytes(data=image_bytes, mime_type=mime_type)
             
             # Generate edited image
