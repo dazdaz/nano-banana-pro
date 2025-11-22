@@ -33,14 +33,11 @@ class NanoBananoPro:
     
     def __init__(self):
         self.key_file = Path.home() / ".nano_banana_pro_key"
-        self.output_dir = Path.home() / "nano_banana_pro_outputs"
+        self.output_dir = Path.cwd()  # Use current working directory
         self.model_name = "gemini-3-pro-image-preview"
         
         # Pricing estimates (USD) - subject to change, check Google AI pricing
         self.cost_per_image = 0.04  # Estimated cost per image generation
-        
-        # Create output directory if it doesn't exist
-        self.output_dir.mkdir(exist_ok=True)
         
         # Load and configure API key
         self._load_api_key()
@@ -62,18 +59,25 @@ class NanoBananoPro:
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel(self.model_name)
     
-    def generate(self, prompt: str) -> Path:
+    def generate(self, prompt: str, output_filename: str = None) -> Path:
         """
         Generate an image from a text prompt.
         
         Args:
             prompt: Text description of the image to generate
+            output_filename: Optional custom filename for the output
             
         Returns:
             Path to the saved image file
         """
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = self.output_dir / f"nano_{timestamp}.png"
+        if output_filename:
+            output_path = self.output_dir / output_filename
+            # Ensure .png extension
+            if not output_path.suffix:
+                output_path = output_path.with_suffix('.png')
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"nano_{timestamp}.png"
         
         print("\033[1;33mGenerating with Nano Banana Pro...\033[0m")
         print(f"Prompt: \033[0;32m{prompt}\033[0m\n")
@@ -104,13 +108,14 @@ class NanoBananoPro:
             print(f"\033[0;31mError generating image: {e}\033[0m")
             sys.exit(1)
     
-    def edit_image(self, prompt: str, image_path: str) -> Path:
+    def edit_image(self, prompt: str, image_path: str, output_filename: str = None) -> Path:
         """
         Edit an existing image using a text prompt.
         
         Args:
             prompt: Text description of the edit to make
             image_path: Path to the image file to edit
+            output_filename: Optional custom filename for the output
             
         Returns:
             Path to the saved edited image
@@ -121,8 +126,14 @@ class NanoBananoPro:
             print(f"\033[0;31mImage not found: {image_path}\033[0m")
             sys.exit(1)
         
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = self.output_dir / f"nano_edited_{timestamp}.png"
+        if output_filename:
+            output_path = self.output_dir / output_filename
+            # Ensure .png extension
+            if not output_path.suffix:
+                output_path = output_path.with_suffix('.png')
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = self.output_dir / f"nano_edited_{timestamp}.png"
         
         print("\033[1;33mEditing image with Nano Banana Pro...\033[0m")
         print(f"Image: \033[0;36m{image_path}\033[0m")
@@ -258,6 +269,12 @@ Examples:
         help='Number of recent files to show (default: 20)'
     )
     
+    parser.add_argument(
+        '-o', '--output',
+        metavar='FILENAME',
+        help='Optional output filename (default: auto-generated with timestamp)'
+    )
+    
     args = parser.parse_args()
     
     # Initialize the generator
@@ -269,12 +286,12 @@ Examples:
     
     elif args.generate:
         # Generate from prompt
-        nano.generate(args.generate)
+        nano.generate(args.generate, args.output)
     
     elif args.edit:
         # Edit image: args.edit is a list [image_path, prompt]
         image_path, prompt = args.edit
-        nano.edit_image(prompt, image_path)
+        nano.edit_image(prompt, image_path, args.output)
     
     else:
         parser.print_help()
