@@ -1,0 +1,6 @@
+# Nano Banana Pro - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Google Generative AI SDK
+# Used for image generation and API authentication
+google-generativeai>=0.3.0

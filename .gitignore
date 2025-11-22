@@ -1,0 +1,37 @@
+# Nano Banana Pro - Key Files (stored in home directory)
+# These files contain sensitive API keys and should never be committed
+.nano_banana_pro_key
+.nano_banana_pro_project
+.nano_banana_pro_key_uid
+
+# Any local key files that might be created in project directory
+*_key
+*.key
+*.pem
+*.p12
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Node modules (if applicable)
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
