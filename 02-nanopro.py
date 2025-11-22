@@ -315,7 +315,7 @@ Examples:
         '-n', '--limit',
         type=int,
         default=20,
-        help='Number of recent files to show (default: 20)'
+        help='Number of recent files to show with --list (default: 20)'
     )
     
     parser.add_argument(
