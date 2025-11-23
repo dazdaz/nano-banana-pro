@@ -6,7 +6,7 @@ This toolkit provides an easy-to-use interface for leveraging Google's state-of-
 
 ## What is Nano Banana Pro?
 
-Nano Banana Pro is Google's advanced image generation model available through Vertex AI. It offers:
+Nano Banana Pro is Google's advanced image generation model available through Vertex AI and other platforms. It offers:
 - **Text-to-Image Generation** - Create images from text descriptions
 - **Image Editing** - Modify existing images with AI-powered edits
 - **Multiple Aspect Ratios** - Generate images in various formats (1:1, 16:9, 9:16, 4:3, 3:4)
